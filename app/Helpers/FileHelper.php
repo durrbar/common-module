@@ -3,90 +3,97 @@
 namespace Modules\Common\Helpers;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Intervention\Image\Laravel\Facades\Image;
 
 class FileHelper
 {
     protected UploadedFile $file;
+
     protected ?string $fileName = null;
+
     protected ?string $path = null;
+
     protected ?string $disk = 'public';
+
     protected ?string $visibility = 'public';
+
     protected ?int $height = 300;
+
     protected ?int $quality = 75;
 
     /**
      * Set the file to process.
      *
-     * @param UploadedFile $file
      * @return $this
      */
     public function setFile(UploadedFile $file): self
     {
         $this->file = $file;
+
         return $this;
     }
 
     /**
      * Set the file to process.
      *
-     * @param UploadedFile $file
+     * @param  UploadedFile  $file
      * @return $this
      */
     public function setPath(string $path): self
     {
         $this->path = $path;
+
         return $this;
     }
 
     /**
      * Set the disk for file storage.
      *
-     * @param string $disk
      * @return $this
      */
     public function setDisk(string $disk): self
     {
         $this->disk = $disk;
+
         return $this;
     }
 
     /**
      * Set the visibility for file storage.
      *
-     * @param string $visibility
      * @return $this
      */
     public function setVisibility(string $visibility): self
     {
         $this->visibility = $visibility;
+
         return $this;
     }
 
     /**
      * Set the image height for resizing.
      *
-     * @param int $height
      * @return $this
      */
     public function setHeight(int $height): self
     {
         $this->height = $height;
+
         return $this;
     }
 
     /**
      * Set the image quality for compression.
      *
-     * @param int $quality
      * @return $this
      */
     public function setQuality(int $quality): self
     {
         $this->quality = $quality;
+
         return $this;
     }
 
@@ -105,7 +112,6 @@ class FileHelper
             $this->file->extension()
         );
 
-
         $this->path = "{$this->path}/{$this->fileName}";
 
         return $this;
@@ -123,7 +129,7 @@ class FileHelper
             $image = $this->resizeImage();
             $this->storeResized($image);
         } catch (\Exception $e) {
-            Log::error("Image processing failed for {$this->path}: " . $e->getMessage());
+            Log::error("Image processing failed for {$this->path}: ".$e->getMessage());
             // Store the original file if resizing fails
             $this->storeOriginal();
         }
@@ -142,7 +148,7 @@ class FileHelper
         $width = (int) (($image->width() / $image->height()) * $this->height);
 
         // Resize and maintain aspect ratio
-        return $image->resize($width, $this->height, function ($constraint) {
+        return $image->resize($width, $this->height, function ($constraint): void {
             $constraint->aspectRatio();
             $constraint->upsize();
         })->encodeByExtension($this->file->extension(), quality: $this->quality);
@@ -151,8 +157,7 @@ class FileHelper
     /**
      * Store the resized image.
      *
-     * @param \Intervention\Image\Image $image
-     * @return bool
+     * @param  \Intervention\Image\Image  $image
      */
     private function storeResized($image): bool
     {
@@ -164,32 +169,27 @@ class FileHelper
 
     /**
      * Store the original uploaded file.
-     *
-     * @return bool
      */
     private function storeOriginal(): bool
     {
         $this->ensureDirectoryExists();
+
         return Storage::disk($this->disk)->putFileAs(dirname($this->path), $this->file, basename($this->path), ['visibility' => $this->visibility]);
     }
 
     /**
      * Ensure the directory exists on the specified disk.
-     *
-     * @return void
      */
     private function ensureDirectoryExists(): void
     {
         $directory = dirname($this->path);
-        if (!Storage::disk($this->disk)->exists($directory)) {
+        if (! Storage::disk($this->disk)->exists($directory)) {
             Storage::disk($this->disk)->makeDirectory($directory);
         }
     }
 
     /**
      * Get the generated file name.
-     *
-     * @return string
      */
     public function getFileName(): string
     {
@@ -198,8 +198,6 @@ class FileHelper
 
     /**
      * Get the path of the uploaded file.
-     *
-     * @return string
      */
     public function getPath(): string
     {
