@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\Common\Helpers;
 
+use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -10,19 +13,19 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class FileHelper
 {
-    protected UploadedFile $file;
+    private UploadedFile $file;
 
-    protected ?string $fileName = null;
+    private ?string $fileName = null;
 
-    protected ?string $path = null;
+    private ?string $path = null;
 
-    protected ?string $disk = 'public';
+    private ?string $disk = 'public';
 
-    protected ?string $visibility = 'public';
+    private ?string $visibility = 'public';
 
-    protected ?int $height = 300;
+    private ?int $height = 300;
 
-    protected ?int $quality = 75;
+    private ?int $quality = 75;
 
     /**
      * Set the file to process.
@@ -108,7 +111,7 @@ class FileHelper
             '%s_%s_%s.%s',
             now()->format('YmdHis'),
             Str::random(8),
-            substr(md5($this->file->hashName()), 0, 8),
+            mb_substr(md5($this->file->hashName()), 0, 8),
             $this->file->extension()
         );
 
@@ -128,13 +131,29 @@ class FileHelper
             // Resize and store the image
             $image = $this->resizeImage();
             $this->storeResized($image);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Image processing failed for {$this->path}: ".$e->getMessage());
             // Store the original file if resizing fails
             $this->storeOriginal();
         }
 
         return $this;
+    }
+
+    /**
+     * Get the generated file name.
+     */
+    public function getFileName(): string
+    {
+        return $this->fileName;
+    }
+
+    /**
+     * Get the path of the uploaded file.
+     */
+    public function getPath(): string
+    {
+        return $this->path;
     }
 
     /**
@@ -186,21 +205,5 @@ class FileHelper
         if (! Storage::disk($this->disk)->exists($directory)) {
             Storage::disk($this->disk)->makeDirectory($directory);
         }
-    }
-
-    /**
-     * Get the generated file name.
-     */
-    public function getFileName(): string
-    {
-        return $this->fileName;
-    }
-
-    /**
-     * Get the path of the uploaded file.
-     */
-    public function getPath(): string
-    {
-        return $this->path;
     }
 }
